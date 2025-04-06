@@ -46,5 +46,6 @@ else:
             image = PIL.Image.open(io.BytesIO(image))
             image.show()
 
+
     except Exception as e:
         print(f"Error during inference: {e}")
