@@ -3,6 +3,7 @@ import io
 import os
 from huggingface_hub import InferenceClient
 from dotenv import load_dotenv
+from transformers import pipeline
 
 # Load API token
 load_dotenv()
@@ -20,8 +21,23 @@ def ai_agent(task, model=None):
     """
     Determines whether to generate text or an image based on the input task.
     """
-    if any(word in task.lower() for word in ["image", "picture", "photo", "art", "drawing", "illustration"]):
-        model = model or "stabilityai/stable-diffusion-2-1-base"
+
+    class_prompt = f"""
+    classify the following request as either 'IMAGE' or 'TEXT':
+    Request = {task}
+    Classification:
+    """
+
+    intent_classification = client.text_generation(
+        class_prompt,
+        model="google/flan-t5-small",
+        max_new_tokens=10
+    ).strip()
+
+#    if any(word in task.lower() for word in ["image", "picture", "photo", "art", "drawing", "illustration"]):
+    if "IMAGE" in intent_classification.upper():
+#        model = model or "stabilityai/stable-diffusion-2-1-base"
+        model="runwayml/stable-diffusion-v1-5"
         print(f"\n🎨 Generating an image for: {task}")
         
         image = client.text_to_image(task, model=model, height=512, width=512)
@@ -39,7 +55,9 @@ def ai_agent(task, model=None):
         model = "google/flan-t5-small"
         print(f"\n📝 Generating text for: {task}")
 
-        response = client.text_generation(task, model=model)
+#        response = client.text_generation(task, model=model)
+        generator = pipeline("text-generation", model="distilgpt2")
+        response = generator(task, max_length=30)
         print("\n💡 AI Response:\n", response)
         return response  # Returns the generated text
 
